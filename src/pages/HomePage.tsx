@@ -21,6 +21,7 @@ interface RideWithDriver {
   seats_left: number;
   driver_id: string;
   driver_name: string;
+  driver_phone: string;
   driver_rating: number;
   driver_rides: number;
   is_verified: boolean;
@@ -105,7 +106,19 @@ const NegotiationModal = ({ ride, onClose, onConfirmTrip }: NegotiationModalProp
   const [error, setError] = useState('');
 
   const handleSend = async () => {
-    if (!user) return;
+    if (!user || user.id === ride.driver_id) {
+      setError('You cannot book your own ride.');
+      setPhase('form');
+      return;
+    }
+
+    const priceVal = parseFloat(offerPrice);
+    if (isNaN(priceVal) || priceVal <= 0) {
+      setError('Please enter a valid offer price.');
+      setPhase('form');
+      return;
+    }
+
     setPhase('sending');
     setError('');
 
@@ -220,6 +233,17 @@ const NegotiationModal = ({ ride, onClose, onConfirmTrip }: NegotiationModalProp
 
 
 
+const MapBoundsController = ({ pickup, dropoff }: { pickup: any, dropoff: any }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (pickup && dropoff) {
+      const bounds = L.latLngBounds([pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]);
+      map.fitBounds(bounds, { padding: [50, 120], animate: true });
+    }
+  }, [pickup, dropoff, map]);
+  return null;
+};
+
 const HomePage = () => {
   const { user, setActiveTrip, setScreen } = useApp();
   const [rides, setRides] = useState<RideWithDriver[]>([]);
@@ -239,6 +263,7 @@ const HomePage = () => {
         *,
         driver:profiles!rides_driver_id_fkey (
           name,
+          phone,
           rating,
           total_rides,
           is_nid_verified,
@@ -273,6 +298,7 @@ const HomePage = () => {
       seats_left: r.seats_left,
       driver_id: r.driver_id,
       driver_name: r.driver?.name || 'User',
+      driver_phone: r.driver?.phone || '',
       driver_rating: r.driver?.rating || 5.0,
       driver_rides: r.driver?.total_rides || 0,
       is_verified: r.driver?.is_nid_verified || r.driver?.is_email_verified || false,
@@ -293,6 +319,7 @@ const HomePage = () => {
     setActiveTrip({
       driverId: ride.driver_id,
       driverName: ride.driver_name,
+      driverPhone: ride.driver_phone,
       driverRating: ride.driver_rating,
       car: ride.car,
       from: ride.from_address,
@@ -379,6 +406,7 @@ const HomePage = () => {
         )}
         
         <LocateMeController trigger={locateTrigger} />
+        <MapBoundsController pickup={pickup} dropoff={dropoff} />
 
         {/* Real Driver Markers - Only in idle/initial state */}
         {mapMode === 'idle' && rides.slice(0, 5).map(ride => (

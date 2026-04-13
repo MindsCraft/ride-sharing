@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Clock, XCircle, ChevronRight, Star, MessageSquare, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, ChevronRight, Star, MessageSquare, Loader2, Phone } from 'lucide-react';
 import type { RideRequest } from '../context/AppContext';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
@@ -149,9 +149,17 @@ const ActivityPage = () => {
                         <div style={{ fontWeight: 600, fontSize: 15 }}>{item.driverName}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{item.from} → {item.to}</div>
                       </div>
-                      <span className={`status-pill confirmed`}>
-                        <CheckCircle size={10} /> Confirmed
-                      </span>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button 
+                          onClick={() => item.driverPhone && window.open(`tel:${item.driverPhone}`, '_self')}
+                          style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        >
+                          <Phone size={12} />
+                        </button>
+                        <span className={`status-pill confirmed`}>
+                          <CheckCircle size={10} /> Confirmed
+                        </span>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>🕐 {item.departureTime}</span>
@@ -247,9 +255,17 @@ const ActivityPage = () => {
                               ? <button onClick={() => setCounterTarget({ rideId: ride.id, req })} className="request-btn" style={{ fontSize: 12 }}>
                                   Respond
                                 </button>
-                              : <span className={`status-pill ${req.status === 'accepted' ? 'confirmed' : 'completed'}`}>
-                                  {req.status === 'accepted' ? '✅ Accepted' : '❌ Declined'}
-                                </span>
+                              : <div style={{ display: 'flex', gap: 6 }}>
+                                  <button 
+                                    onClick={() => req.riderPhone && window.open(`tel:${req.riderPhone}`, '_self')}
+                                    style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                  >
+                                    <Phone size={14} />
+                                  </button>
+                                  <span className={`status-pill ${req.status === 'accepted' ? 'confirmed' : 'completed'}`}>
+                                    {req.status === 'accepted' ? '✅ Accepted' : '❌ Declined'}
+                                  </span>
+                                </div>
                             }
                           </div>
                           {req.message && (

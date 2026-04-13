@@ -1,23 +1,76 @@
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 
 const COMPLIMENTS = ['Friendly', 'Punctual', 'Safe Driver', 'Clean Car', 'Great Conversation', 'Recommended Route'];
 
 const RateTripScreen = () => {
-  const { completedTrip, setCompletedTrip, setScreen } = useApp();
+  const { user, completedTrip, setCompletedTrip, setScreen } = useApp();
   const [stars, setStars] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [comment, setComment] = useState('');
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!completedTrip) { setScreen('main'); return null; }
 
   const toggleCompliment = (c: string) =>
     setSelected(s => s.includes(c) ? s.filter(x => x !== c) : [...s, c]);
 
-  const handleSubmit = () => setDone(true);
+  const handleSubmit = async () => {
+    if (!user || !completedTrip || stars === 0) return;
+    setLoading(true);
+
+    try {
+      // 1. Insert the rating record
+      const { error: ratingError } = await supabase
+        .from('ratings')
+        .insert({
+          rater_id: user.id,
+          rated_id: completedTrip.driverId,
+          stars: stars,
+          compliments: selected,
+          comment: comment.trim(),
+        });
+
+      if (ratingError) throw ratingError;
+
+      // 2. Fetch driver's current stats to calculate new average
+      const { data: profile, error: profileFetchError } = await supabase
+        .from('profiles')
+        .select('rating, total_rides')
+        .eq('id', completedTrip.driverId)
+        .single();
+      
+      if (profileFetchError) throw profileFetchError;
+
+      const currentRating = profile.rating || 5.0;
+      const currentRides = profile.total_rides || 0;
+      const newTotalRides = currentRides + 1;
+      const newRating = ((currentRating * currentRides) + stars) / newTotalRides;
+
+      // 3. Update driver profile
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({
+          rating: Number(newRating.toFixed(2)),
+          total_rides: newTotalRides
+        })
+        .eq('id', completedTrip.driverId);
+
+      if (profileUpdateError) throw profileUpdateError;
+
+      setDone(true);
+    } catch (err) {
+      console.error('Rating submission failed:', err);
+      // Fallback: still show done to keep user flow smooth, but log the error
+      setDone(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (done) {
     return (
@@ -107,8 +160,8 @@ const RateTripScreen = () => {
           <textarea className="form-input" rows={3} placeholder="Tell others about your experience..." value={comment} onChange={e => setComment(e.target.value)} />
         </div>
 
-        <button className="btn btn-primary btn-block" onClick={handleSubmit} disabled={stars === 0} style={{ opacity: stars === 0 ? 0.5 : 1, fontSize: 16 }}>
-          Submit Rating
+        <button className="btn btn-primary btn-block" onClick={handleSubmit} disabled={stars === 0 || loading} style={{ opacity: (stars === 0 || loading) ? 0.5 : 1, fontSize: 16 }}>
+          {loading ? 'Submitting...' : 'Submit Rating'}
         </button>
 
         <button style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 14, color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }} onClick={() => { setCompletedTrip(null); setScreen('main'); }}>

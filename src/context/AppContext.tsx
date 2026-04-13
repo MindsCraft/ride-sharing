@@ -42,6 +42,7 @@ export type AppScreen =
 export interface ActiveTrip {
   driverId: string;
   driverName: string;
+  driverPhone?: string;
   driverRating: number;
   car: string;
   from: string;
@@ -57,6 +58,7 @@ export interface RideRequest {
   rideId: string;
   riderId: string;
   riderName: string;
+  riderPhone?: string;
   riderRating: number;
   riderInitial: string;
   offeredPrice: number;
@@ -152,7 +154,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           offered_price,
           message,
           status,
-          profiles: rider_id (name, rating)
+          profiles: rider_id (name, rating, phone)
         )
       `)
       .eq('driver_id', userId)
@@ -174,6 +176,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           rideId: r.id,
           riderId: req.rider_id,
           riderName: req.profiles?.name || 'User',
+          riderPhone: req.profiles?.phone || '',
           riderRating: req.profiles?.rating || 5.0,
           riderInitial: (req.profiles?.name || 'U').charAt(0).toUpperCase(),
           offeredPrice: req.offered_price,
@@ -193,7 +196,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           from_address,
           to_address,
           departure_time,
-          profiles: driver_id (name)
+          profiles: driver_id (name, phone)
         )
       `)
       .eq('rider_id', userId)
@@ -211,11 +214,39 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         message: req.message || '',
         status: req.status,
         driverName: req.rides?.profiles?.name || 'Driver',
+        driverPhone: req.rides?.profiles?.phone || '',
         from: req.rides?.from_address || '',
         to: req.rides?.to_address || '',
         departureTime: req.rides?.departure_time ? new Date(req.rides.departure_time).toLocaleString('en-BD', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '',
       }));
       setMyRequests(formattedMyReqs);
+
+      // ─── Auto-Resume Live Trip Logic ───
+      const ongoing = formattedMyReqs.find(r => r.status === 'accepted');
+      if (ongoing) {
+        // Only auto-resume if the trip is "current" (within 2 hours of departure)
+        const departure = new Date(ongoing.departureTime);
+        const now = new Date();
+        const diffMs = now.getTime() - departure.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours >= -1 && diffHours <= 4) { // 1h before to 4h after
+           setActiveTrip({
+             driverId: ongoing.id, // This is technically the request ID but we use ID for tracking
+             driverName: ongoing.driverName,
+             driverPhone: ongoing.driverPhone,
+             driverRating: 5.0, // Should fetch real if available
+             car: 'Vehicle',
+             from: ongoing.from,
+             to: ongoing.to,
+             agreedPrice: ongoing.offeredPrice,
+             startedAt: new Date(ongoing.departureTime),
+             driverLat: 23.8, // Mock starting point
+             driverLng: 90.4,
+           });
+           setScreen('live_trip');
+        }
+      }
     }
   };
 
@@ -336,11 +367,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // INITIAL_SESSION with no user: do nothing, stay on landing page
     });
 
+    // ─── Realtime Subscription for Ride Requests ───
+    let channel: any = null;
+    if (user?.id) {
+       channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to Insert, Update, Delete
+            schema: 'public',
+            table: 'ride_requests',
+          },
+          (payload) => {
+            console.log('Realtime change received:', payload);
+            // Refresh app data whenever a request relevant to us changes
+            fetchAppData(user.id);
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       subscription.unsubscribe();
+      if (channel) supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   return (
     <AppContext.Provider value={{

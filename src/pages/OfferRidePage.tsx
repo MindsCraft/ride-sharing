@@ -109,6 +109,11 @@ const OfferRidePage = () => {
     setError('');
 
     const priceNum = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
+    if (priceNum <= 10) {
+      setError('Minimum cost sharing is 10 BDT.');
+      setLoading(false);
+      return;
+    }
     const departureTime = new Date(time).toISOString();
 
     const { error: insertError } = await supabase

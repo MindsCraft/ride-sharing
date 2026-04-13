@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Phone, MessageCircle, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -50,7 +51,7 @@ const LiveTripPage = () => {
 
   useEffect(() => {
     let step = 0;
-    interval.current = setInterval(() => {
+    interval.current = setInterval(async () => {
       step++;
       setEtaSeconds(s => Math.max(0, s - 10));
 
@@ -64,9 +65,35 @@ const LiveTripPage = () => {
         setTripPhase('in_progress');
         setEtaSeconds(360);
       }
+      
       if (step === 85) {
         setTripPhase('completed');
         if (interval.current) clearInterval(interval.current);
+
+        // ─── Persistent Trip Completion ───
+        try {
+          if (activeTrip) {
+            // 1. Update driver's total earnings
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('total_earnings')
+              .eq('id', activeTrip.driverId)
+              .single();
+            
+            const currentEarnings = profile?.total_earnings || 0;
+            
+            await supabase
+              .from('profiles')
+              .update({ total_earnings: currentEarnings + activeTrip.agreedPrice })
+              .eq('id', activeTrip.driverId);
+
+            // ⚠️ Note: We don't mark the 'ride' as completed here because other 
+            // passengers might still be on it. Only the individual request is 'finished'.
+          }
+        } catch (err) {
+          console.error('Failed to update trip completion stats:', err);
+        }
+
         setTimeout(() => {
           if (activeTrip) setCompletedTrip(activeTrip);
           setActiveTrip(null);
@@ -75,6 +102,7 @@ const LiveTripPage = () => {
       }
     }, 300);
     return () => { if (interval.current) clearInterval(interval.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const etaMin = Math.ceil(etaSeconds / 60);
@@ -158,7 +186,10 @@ const LiveTripPage = () => {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 0', borderRadius: 'var(--radius-md)', background: 'var(--primary-light)', border: 'none', cursor: 'pointer' }}>
+          <button 
+            onClick={() => activeTrip.driverPhone && window.open(`tel:${activeTrip.driverPhone}`, '_self')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 0', borderRadius: 'var(--radius-md)', background: 'var(--primary-light)', border: 'none', cursor: 'pointer' }}
+          >
             <Phone size={20} color="var(--primary)" />
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--primary)' }}>Call</span>
           </button>
