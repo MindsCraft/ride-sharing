@@ -39,12 +39,12 @@ L.Marker.prototype.options.icon = defaultIcon;
 
 
 
-import { 
-  type LatLngPair, 
-  DHAKA_CENTER, 
-  UBER_PICKUP_ICON as PICKUP_ICON, 
-  UBER_DROPOFF_ICON as DROPOFF_ICON, 
-  reverseGeocode, 
+import {
+  type LatLngPair,
+  DHAKA_CENTER,
+  UBER_PICKUP_ICON as PICKUP_ICON,
+  UBER_DROPOFF_ICON as DROPOFF_ICON,
+  reverseGeocode,
   fetchRoute,
   getDistanceKm
 } from '../utils/mapUtils';
@@ -83,8 +83,8 @@ type MapMode = 'idle' | 'searching' | 'pickup_refinement' | 'results';
 import LocationSearchModal from '../components/LocationSearchModal';
 
 export const USER_LOCATION_ICON = L.divIcon({
-  html: `<div class="user-position-pulse">
-          <div class="user-position-dot"></div>
+  html: `<div class="user-position-stable">
+          <div class="user-position-core"></div>
          </div>`,
   className: '',
   iconAnchor: [12, 12],
@@ -95,8 +95,9 @@ const LocateMeController = ({ trigger, onLocate }: { trigger: number, onLocate: 
   const map = useMap();
   useEffect(() => {
     if (trigger > 0) {
-      map.locate({ setView: true, maxZoom: 17 });
+      map.locate({ setView: true, maxZoom: 18 });
       map.on('locationfound', (e) => {
+        map.setView(e.latlng, 18); // Zoomed out 2 levels for better context
         onLocate([e.latlng.lat, e.latlng.lng]);
       });
     }
@@ -151,11 +152,11 @@ const NegotiationModal = ({ ride, onClose, onConfirmTrip }: NegotiationModalProp
 
     await refreshAppData();
     setPhase('waiting');
-    
+
     setTimeout(() => {
-       if (parseFloat(offerPrice) >= ride.price_per_seat) {
-         setPhase('accepted');
-       }
+      if (parseFloat(offerPrice) >= ride.price_per_seat) {
+        setPhase('accepted');
+      }
     }, 3000);
   };
 
@@ -314,7 +315,7 @@ const HomePage = () => {
       driver_rating: r.driver?.rating || 5.0,
       driver_rides: r.driver?.total_rides || 0,
       is_verified: r.driver?.is_nid_verified || r.driver?.is_email_verified || false,
-      car: r.vehicles?.vehicles?.[0] 
+      car: r.vehicles?.vehicles?.[0]
         ? `${r.vehicles.vehicles[0].color} ${r.vehicles.vehicles[0].make} ${r.vehicles.vehicles[0].model}`
         : 'Car'
     }));
@@ -325,7 +326,7 @@ const HomePage = () => {
   useEffect(() => {
     console.log("HomePage: Component mounted, fetching rides...");
     fetchRides();
-    
+
     // Auto-locate on mount
     setTimeout(() => {
       setLocateTrigger(1);
@@ -373,7 +374,7 @@ const HomePage = () => {
 
     const address = await reverseGeocode(latlng.lat, latlng.lng);
     setPickup({ lat: latlng.lat, lng: latlng.lng, address });
-    
+
     if (dropoff) {
       const route = await fetchRoute({ lat: latlng.lat, lng: latlng.lng, address }, dropoff);
       setRouteCoords(route);
@@ -407,13 +408,15 @@ const HomePage = () => {
       {/* Map */}
       <MapContainer
         center={DHAKA_CENTER}
-        zoom={15}
+        zoom={17}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains='abcd'
+          maxZoom={20}
         />
 
         {mapMode === 'pickup_refinement' && (
@@ -421,7 +424,7 @@ const HomePage = () => {
             // We'll use map.getCenter() in confirmPickup
           }} />
         )}
-        
+
         <LocateMeController trigger={locateTrigger} onLocate={setUserPos} />
         <MapBoundsController pickup={pickup} dropoff={dropoff} />
 
@@ -480,7 +483,7 @@ const HomePage = () => {
 
       {/* Search Overlay */}
       {mapMode === 'searching' && (
-        <LocationSearchModal 
+        <LocationSearchModal
           onClose={() => setMapMode('idle')}
           onSelect={(loc) => handleSelectLocation('dropoff', loc)}
         />
@@ -501,9 +504,9 @@ const HomePage = () => {
 
             <div className="ride-options page-scroll">
               {filteredRides.map(ride => (
-                <div 
-                  key={ride.id} 
-                  className={`uber-product-card ${selectedRide?.id === ride.id ? 'selected' : ''}`} 
+                <div
+                  key={ride.id}
+                  className={`uber-product-card ${selectedRide?.id === ride.id ? 'selected' : ''}`}
                   onClick={() => setSelectedRide(ride)}
                 >
                   <div className="product-image">
@@ -511,17 +514,17 @@ const HomePage = () => {
                   </div>
                   <div className="product-info">
                     <div className="product-name">RideShare <Users size={12} /> {ride.seats_left}</div>
-                    <div className="product-eta">{new Date(ride.departure_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} arrival</div>
+                    <div className="product-eta">{new Date(ride.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} arrival</div>
                   </div>
                   <div className="product-price">৳{ride.price_per_seat}</div>
                 </div>
               ))}
             </div>
-            <button 
-              className="btn btn-primary btn-block uber-confirm-btn" 
+            <button
+              className="btn btn-primary btn-block uber-confirm-btn"
               onClick={() => {
                 if (!selectedRide && filteredRides.length > 0) {
-                   setSelectedRide(filteredRides[0]);
+                  setSelectedRide(filteredRides[0]);
                 }
                 // The NegotiationModal will show up when selectedRide is set
               }}

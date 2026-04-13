@@ -19,8 +19,8 @@
   --surface-glass: rgba(255, 255, 255, 0.95);
   
   --text-main: rgba(0,0,0,0.95); /* Near-Black */
-  --text-sub: #615d59; /* Warm Gray 500 */
-  --text-muted: #a39e98; /* Warm Gray 300 */
+  --text-sub: #4b4844; /* Darker Gray */
+  --text-muted: #88847f; /* Darker Muted Gray */
   --text-white: #ffffff;
 
   /* Notion Whisper Borders */
@@ -98,29 +98,25 @@ button { border: none; background: none; font-family: inherit; cursor: pointer; 
 input, textarea, select { font-family: inherit; }
 img { max-width: 100%; display: block; }
 
-/* ===== USER POSITION PULSE DOT ===== */
-.user-position-pulse {
+/* User Position Stable Dot */
+.user-position-stable {
   width: 24px;
   height: 24px;
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(37, 99, 235, 0.3);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: userPulse 2s infinite;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.1);
 }
-.user-position-dot {
-  width: 14px;
-  height: 14px;
+.user-position-core {
+  width: 12px;
+  height: 12px;
   background: #2563eb;
-  border: 3px solid #fff;
+  border: 2px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(0,0,0,0.3);
-}
-@keyframes userPulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  70% { transform: scale(3); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
 }
 
 /* ===== APP SHELL ===== */
@@ -148,10 +144,11 @@ img { max-width: 100%; display: block; }
   background: #f8f9fa; /* Slightly off-white base */
 }
 
-/* Uber-Style Muted Map Tiles - High Visibility Monochrome */
+/* Uber-Style Map Tiles Optimization */
 .leaflet-tile-container {
-  /* This combination darkens the colors and boosts line contrast */
-  filter: grayscale(100%) contrast(1.2) brightness(0.9) saturate(0.5);
+  /* CARTO Positron contrast boost for better readability of labels */
+  filter: contrast(1.12) brightness(0.96);
+  opacity: 1 !important;
 }
 
 .leaflet-tile {

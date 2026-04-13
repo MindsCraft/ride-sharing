@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, Search } from 'lucide-react';
+import { X, MapPin } from 'lucide-react';
 import { type LatLngPair, POPULAR_LANDMARKS, searchLocation } from '../utils/mapUtils';
 
 interface LocationSearchModalProps {

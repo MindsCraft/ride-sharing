@@ -81,6 +81,7 @@ export interface PostedRide {
 
 export interface MyRideRequest extends RideRequest {
   driverName: string;
+  driverPhone: string;
   from: string;
   to: string;
   departureTime: string;

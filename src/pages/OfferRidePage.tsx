@@ -6,13 +6,13 @@ import { Clock, Users, CheckCircle, Navigation, Search, X, DollarSign } from 'lu
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 
-import { 
-  type LatLngPair, 
-  DHAKA_CENTER, 
-  UBER_PICKUP_ICON as START_ICON, 
-  UBER_DROPOFF_ICON as END_ICON, 
-  reverseGeocode, 
-  fetchRoute 
+import {
+  type LatLngPair,
+  DHAKA_CENTER,
+  UBER_PICKUP_ICON as START_ICON,
+  UBER_DROPOFF_ICON as END_ICON,
+  reverseGeocode,
+  fetchRoute
 } from '../utils/mapUtils';
 import LocationSearchModal from '../components/LocationSearchModal';
 
@@ -30,7 +30,10 @@ const LocateMeController = ({ trigger }: { trigger: number }) => {
   const map = useMap();
   useEffect(() => {
     if (trigger > 0) {
-      map.locate({ setView: true, maxZoom: 15 });
+      map.locate({ setView: true, maxZoom: 18 });
+      map.on('locationfound', (e) => {
+        map.setView(e.latlng, 18);
+      });
     }
   }, [trigger, map]);
   return null;
@@ -44,7 +47,7 @@ const OfferRidePage = () => {
   const [searchingType, setSearchingType] = useState<'origin' | 'destination' | null>(null);
   const [start, setStart] = useState<LatLngPair | null>(null);
   const [end, setEnd] = useState<LatLngPair | null>(null);
-  
+
   // Form State
   const [seats, setSeats] = useState(3);
   const [time, setTime] = useState('');
@@ -77,7 +80,7 @@ const OfferRidePage = () => {
   const confirmOrigin = async (latlng: L.LatLng) => {
     const address = await reverseGeocode(latlng.lat, latlng.lng);
     setStart({ lat: latlng.lat, lng: latlng.lng, address });
-    
+
     if (end) {
       const route = await fetchRoute({ lat: latlng.lat, lng: latlng.lng, address }, end);
       setRouteCoords(route);
@@ -184,27 +187,32 @@ const OfferRidePage = () => {
       )}
 
       {/* Map */}
-      <MapContainer 
-        center={start ? [start.lat, start.lng] : DHAKA_CENTER} 
-        zoom={13} 
-        style={{ height: '100%', width: '100%' }} 
+      <MapContainer
+        center={start ? [start.lat, start.lng] : DHAKA_CENTER}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains='abcd'
+          maxZoom={20}
+        />
         <LocateMeController trigger={locateTrigger} />
-        
+
         {mapMode === 'refining' && (
-           <PinRefinementController onCenterChange={() => {}} />
+          <PinRefinementController onCenterChange={() => { }} />
         )}
-        
+
         {start && mapMode !== 'refining' && <Marker position={[start.lat, start.lng]} icon={START_ICON} />}
         {end && <Marker position={[end.lat, end.lng]} icon={END_ICON} />}
-        
+
         {routeCoords.length > 0 && (
-           <Polyline
+          <Polyline
             positions={routeCoords}
             pathOptions={{ color: 'var(--primary)', weight: 6, opacity: 0.9 }}
-          />  )}
+          />)}
 
         {/* Origin Refinement Button - Must be inside MapContainer for useMap */}
         {mapMode === 'refining' && (
@@ -257,13 +265,13 @@ const OfferRidePage = () => {
                 <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <DollarSign size={16} color="var(--primary)" /> Cost sharing per seat (BDT)
                 </label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="e.g. 150" 
-                  required 
-                  value={price} 
-                  onChange={e => setPrice(e.target.value)} 
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. 150"
+                  required
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
                 />
               </div>
 
@@ -283,7 +291,7 @@ const OfferRidePage = () => {
 
               {error && (
                 <div style={{ background: '#FEE2E2', color: '#991B1B', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: 13, marginBottom: 8, fontWeight: 500 }}>
-                   ⚠️ {error}
+                  ⚠️ {error}
                 </div>
               )}
 
@@ -303,7 +311,7 @@ const OfferRidePage = () => {
       )}
 
       {searchingType && (
-        <LocationSearchModal 
+        <LocationSearchModal
           onClose={() => setSearchingType(null)}
           onSelect={handleSelectSearch}
           placeholder={searchingType === 'origin' ? "Starting from?" : "Going to?"}
@@ -323,7 +331,7 @@ const ConfirmOriginButton = ({ onConfirm }: { onConfirm: (latlng: L.LatLng) => v
         <div className="refinement-sub">Nudge map to fix exact pick-up curb</div>
       </div>
       <button className="btn btn-primary btn-block" style={{ marginTop: 12 }} id="confirm-origin-btn" onClick={() => onConfirm(map.getCenter())}>
-         Confirm Start Point
+        Confirm Start Point
       </button>
     </div>
   );
