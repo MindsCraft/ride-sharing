@@ -29,7 +29,7 @@ const ProfilePage = () => {
   return (
     <div className="page-scroll">
       {/* Profile Header */}
-      <div style={{ background: 'linear-gradient(160deg, var(--primary) 0%, #065F46 100%)', padding: '40px 20px 64px', position: 'relative' }}>
+      <div style={{ background: 'var(--primary)', padding: '40px 20px 64px', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white', flexShrink: 0 }}>
             {user?.avatarInitial || '?'}

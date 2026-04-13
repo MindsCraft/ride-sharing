@@ -43,7 +43,7 @@ const RateTripScreen = () => {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(160deg, var(--primary), #065F46)', padding: '48px 24px 60px', textAlign: 'center' }}>
+      <div style={{ background: 'var(--primary)', padding: '48px 24px 60px', textAlign: 'center' }}>
         <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white', margin: '0 auto 12px' }}>
           {completedTrip.driverName.charAt(0)}
         </div>

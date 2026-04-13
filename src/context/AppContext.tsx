@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
@@ -31,6 +31,7 @@ export interface AppUser {
 
 export type AppScreen =
   | 'splash'
+  | 'landing'
   | 'login'
   | 'otp'
   | 'onboarding'
@@ -121,7 +122,7 @@ interface AppContextType {
   setPostedRides: (r: PostedRide[]) => void;
   myRequests: MyRideRequest[];
   setMyRequests: (r: MyRideRequest[]) => void;
-  isLoadingAuth: boolean;
+
   refreshProfile: () => Promise<void>;
   refreshAppData: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -130,14 +131,14 @@ interface AppContextType {
 const AppContext = createContext<AppContextType>({} as AppContextType);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [screen, setScreen] = useState<AppScreen>('splash');
+  const [screen, setScreen] = useState<AppScreen>('landing');
   const [user, setUser] = useState<AppUser | null>(null);
   const [pendingPhone, setPendingPhone] = useState('');
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [completedTrip, setCompletedTrip] = useState<ActiveTrip | null>(null);
   const [postedRides, setPostedRides] = useState<PostedRide[]>([]);
   const [myRequests, setMyRequests] = useState<MyRideRequest[]>([]);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const loadingUserId = useRef<string | null>(null); // Guard: track which userId is being loaded
 
   const fetchAppData = async (userId: string) => {
     // 1. Fetch rides posted by me (Driver Inbox)
@@ -219,22 +220,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loadProfile = async (userId: string) => {
+    // Guard: if already loading this exact user, skip duplicate call
+    // (INITIAL_SESSION + SIGNED_IN both fire on fresh login)
+    if (loadingUserId.current === userId) {
+      console.log("AppContext: loadProfile already in progress for same user, skipping");
+      return;
+    }
+    loadingUserId.current = userId;
     console.log("AppContext: Starting loadProfile for", userId);
+
     try {
+      console.log("AppContext: Querying profiles for", userId);
+
       const { data: profileData, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-      
-      console.log("AppContext: Profile data result:", { profileData, profileErr });
+
+      console.log("AppContext: Profile query finished", { hasData: !!profileData, error: profileErr });
 
       if (profileErr || !profileData) {
-        console.warn("Profile not found, sending to onboarding");
+        if (profileErr?.code === 'PGRST116') {
+          console.log("AppContext: No profile row found (PGRST116), sending to onboarding");
+        } else {
+          console.warn("AppContext: Profile query error, sending to onboarding as fallback", profileErr);
+        }
         setScreen('onboarding');
         return;
       }
 
+      console.log("AppContext: Fetching vehicles for", userId);
       const { data: vehiclesData } = await supabase
         .from('vehicles')
         .select('*')
@@ -249,20 +265,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }));
 
       const appUser = rowToAppUser(profileData as any, vehicles);
+      console.log("AppContext: Profile loaded successfully for", appUser.name);
       setUser(appUser);
-      
-      // Fetch app data in background, don't block profile load if it fails
+
+      // Fetch app data in background (non-blocking)
       fetchAppData(userId).catch(err => console.error("Error fetching app data:", err));
 
       if (!appUser.name) {
+        console.log("AppContext: User has no name, sending to onboarding");
         setScreen('onboarding');
       } else {
+        console.log("AppContext: Sending user to main app");
         setScreen('main');
       }
-    } catch (err) {
-      console.error("Critical error loading profile:", err);
-      // Fallback to onboarding so user isn't stuck
+    } catch (err: any) {
+      console.error("Critical error in loadProfile:", err);
       setScreen('onboarding');
+    } finally {
+      loadingUserId.current = null;
     }
   };
 
@@ -279,6 +299,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('rs_bypass_user');
     setUser(null);
     setPostedRides([]);
     setMyRequests([]);
@@ -286,44 +307,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      console.log("AppContext: init() started");
+    // Check for dev bypass first
+    const bypassStr = localStorage.getItem('rs_bypass_user');
+    if (bypassStr) {
       try {
-        console.log("AppContext: Fetching session...");
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log("AppContext: Session result:", { session, error });
-        if (error) throw error;
-
-        if (session?.user) {
-          await loadProfile(session.user.id);
-        } else {
-          console.log("AppContext: No session, going to login");
-          setScreen('login');
-        }
-      } catch (err) {
-        console.error("AppContext: Init failed:", err);
-        setScreen('login');
-      } finally {
-        console.log("AppContext: init() finished");
-        setIsLoadingAuth(false);
+        const mockUser = JSON.parse(bypassStr);
+        setUser(mockUser);
+        setScreen('main');
+        console.log("AppContext: Dev bypass restored from localStorage");
+        return; // Skip standard auth flow
+      } catch (e) {
+        localStorage.removeItem('rs_bypass_user');
       }
-    };
-
-    const timer = setTimeout(init, 1600);
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      console.log("Auth Event:", event);
+      if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
+        // User has an active session — load profile and go to app
         await loadProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
+        loadingUserId.current = null;
         setUser(null);
         setPostedRides([]);
         setMyRequests([]);
-        setScreen('login');
+        setScreen('landing');
       }
+      // INITIAL_SESSION with no user: do nothing, stay on landing page
     });
 
     return () => {
-      clearTimeout(timer);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,7 +351,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       completedTrip, setCompletedTrip,
       postedRides, setPostedRides,
       myRequests, setMyRequests,
-      isLoadingAuth,
       refreshProfile,
       refreshAppData,
       signOut,

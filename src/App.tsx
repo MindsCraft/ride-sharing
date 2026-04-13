@@ -18,6 +18,7 @@ import ProfilePage from './pages/ProfilePage';
 // Trip flow pages
 import LiveTripPage from './pages/LiveTripPage';
 import RateTripScreen from './pages/RateTripScreen';
+import LandingPage from './pages/LandingPage';
 
 // Inner component that reads context
 const AppShell = () => {
@@ -30,6 +31,7 @@ const AppShell = () => {
 
   // Auth / trip flow screens (full screen, no tab bar)
   if (screen === 'splash') return <SplashScreen />;
+  if (screen === 'landing') return <LandingPage />;
   if (screen === 'login') return <LoginScreen />;
   if (screen === 'otp') return <OTPScreen />;
   if (screen === 'onboarding') return <OnboardingScreen />;

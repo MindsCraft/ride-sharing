@@ -127,7 +127,7 @@ const LiveTripPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
             width: 56, height: 56, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--primary-light), var(--accent-light))',
+            background: 'var(--surface-2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 22, fontWeight: 700, color: 'var(--primary)', border: '3px solid var(--primary-light)',
           }}>

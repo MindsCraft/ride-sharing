@@ -79,7 +79,7 @@ const OTPScreen = () => {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <div style={{ background: 'linear-gradient(160deg, var(--primary) 0%, #065F46 100%)', padding: '60px 28px 48px', textAlign: 'center' }}>
+      <div style={{ background: 'var(--primary)', padding: '60px 28px 48px', textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>📱</div>
         <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', marginBottom: 8 }}>Verify Your Number</h1>
         <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>

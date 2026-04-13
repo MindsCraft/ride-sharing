@@ -7,7 +7,7 @@ const SplashScreen = () => {
     <div style={{
       height: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(160deg, var(--primary) 0%, #065F46 60%, #022c22 100%)',
+      background: 'var(--primary)',
       gap: 20,
     }}>
       <div style={{ fontSize: 72, animation: 'pulse 2s infinite' }}>🗺️</div>

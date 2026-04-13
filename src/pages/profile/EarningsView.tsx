@@ -59,7 +59,7 @@ const EarningsView = ({ onBack }: Props) => {
 
       {/* Summary cards */}
       <div style={{ padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        <div style={{ background: 'linear-gradient(135deg, var(--primary), #065F46)', borderRadius: 'var(--radius-lg)', padding: '18px 14px', color: 'white' }}>
+        <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '18px 14px', color: 'white' }}>
           <DollarSign size={22} style={{ marginBottom: 6 }} />
           <div style={{ fontSize: 26, fontWeight: 900 }}>৳{totalEarnings}</div>
           <div style={{ fontSize: 12, opacity: 0.8 }}>Total Earnings</div>

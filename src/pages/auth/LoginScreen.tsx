@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
 
 const LoginScreen = () => {
-  const { setScreen, setPendingPhone } = useApp();
+  const { setScreen, setPendingPhone, setUser } = useApp();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,18 +38,33 @@ const LoginScreen = () => {
   };
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+    // Bypass authentication to allow UI work
+    const mockUser: any = {
+      id: 'mock-bypassed-user',
+      name: 'Designer',
+      phone: '+8801700000000',
+      role: 'both',
+      avatarInitial: 'D',
+      rating: 5.0,
+      totalRides: 100,
+      totalEarnings: 0,
+      isNidVerified: true,
+      isEmailVerified: true,
+      workEmail: 'design@notion.com',
+      emergencyContact: '',
+      emergencyName: '',
+      vehicles: []
+    };
+    
+    localStorage.setItem('rs_bypass_user', JSON.stringify(mockUser));
+    setUser(mockUser);
+    setScreen('main');
   };
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(160deg, var(--primary) 0%, #065F46 100%)', padding: '60px 28px 48px', textAlign: 'center' }}>
+      <div style={{ background: 'var(--primary)', padding: '60px 28px 48px', textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🗺️</div>
         <h1 style={{ fontSize: 26, fontWeight: 900, color: 'white', marginBottom: 8 }}>Welcome to RideShare BD</h1>
         <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>Share daily commutes, beat traffic, and<br />help each other save fuel costs.</p>

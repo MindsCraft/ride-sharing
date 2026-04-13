@@ -55,7 +55,7 @@ const OnboardingScreen = () => {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <div style={{ background: 'linear-gradient(160deg, var(--primary) 0%, #065F46 100%)', padding: '60px 28px 48px', textAlign: 'center' }}>
+      <div style={{ background: 'var(--primary)', padding: '60px 28px 48px', textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>{step === 'name' ? '👋' : '🤔'}</div>
         <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', marginBottom: 8 }}>
           {step === 'name' ? 'Welcome aboard!' : 'How will you use RideShare?'}
