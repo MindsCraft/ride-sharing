@@ -329,7 +329,7 @@ const HomePage = () => {
     // Auto-locate on mount
     setTimeout(() => {
       setLocateTrigger(1);
-    }, 1000);
+    }, 300);
   }, []);
 
   const handleConfirmTrip = (ride: RideWithDriver, agreedPrice: number) => {
@@ -407,7 +407,7 @@ const HomePage = () => {
       {/* Map */}
       <MapContainer
         center={DHAKA_CENTER}
-        zoom={13}
+        zoom={15}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
