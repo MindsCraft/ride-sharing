@@ -67,3 +67,21 @@ export function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: nu
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
+export async function searchLocation(query: string): Promise<LatLngPair[]> {
+  if (!query || query.length < 2) return [];
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1&countrycodes=bd`, {
+      headers: { 'Accept-Language': 'en' }
+    });
+    const data = await res.json();
+    return data.map((item: any) => ({
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      address: item.display_name.split(',')[0] + (item.address.suburb ? `, ${item.address.suburb}` : '')
+    }));
+  } catch (err) {
+    console.error('Search failed:', err);
+    return [];
+  }
+}

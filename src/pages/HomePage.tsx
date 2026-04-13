@@ -87,7 +87,7 @@ const LocateMeController = ({ trigger }: { trigger: number }) => {
   const map = useMap();
   useEffect(() => {
     if (trigger > 0) {
-      map.locate({ setView: true, maxZoom: 15 });
+      map.locate({ setView: true, maxZoom: 17 });
     }
   }, [trigger, map]);
   return null;
@@ -313,6 +313,11 @@ const HomePage = () => {
   useEffect(() => {
     console.log("HomePage: Component mounted, fetching rides...");
     fetchRides();
+    
+    // Auto-locate on mount
+    setTimeout(() => {
+      setLocateTrigger(1);
+    }, 1000);
   }, []);
 
   const handleConfirmTrip = (ride: RideWithDriver, agreedPrice: number) => {

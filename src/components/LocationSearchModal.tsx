@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, MapPin } from 'lucide-react';
-import { type LatLngPair, POPULAR_LANDMARKS } from '../utils/mapUtils';
+import React, { useState, useEffect } from 'react';
+import { X, MapPin, Search } from 'lucide-react';
+import { type LatLngPair, POPULAR_LANDMARKS, searchLocation } from '../utils/mapUtils';
 
 interface LocationSearchModalProps {
   onClose: () => void;
@@ -10,9 +10,25 @@ interface LocationSearchModalProps {
 
 const LocationSearchModal: React.FC<LocationSearchModalProps> = ({ onClose, onSelect, placeholder = "Where to?" }) => {
   const [search, setSearch] = useState('');
-  const results = search 
-    ? POPULAR_LANDMARKS.filter(l => l.name.toLowerCase().includes(search.toLowerCase()))
-    : POPULAR_LANDMARKS;
+  const [results, setResults] = useState<LatLngPair[]>(POPULAR_LANDMARKS.map(l => ({ ...l, address: l.name })));
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!search) {
+      setResults(POPULAR_LANDMARKS.map(l => ({ ...l, address: l.name })));
+      setLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      const res = await searchLocation(search);
+      setResults(res.length > 0 ? res : POPULAR_LANDMARKS.map(l => ({ ...l, address: l.name })));
+      setLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   return (
     <div className="location-search-overlay">
@@ -32,13 +48,13 @@ const LocationSearchModal: React.FC<LocationSearchModalProps> = ({ onClose, onSe
       </div>
       <div className="search-results page-scroll">
         <div className="results-group">
-          <div className="results-label">Suggestions</div>
-          {results.map(loc => (
-            <button key={loc.name} className="result-item" onClick={() => onSelect({ ...loc, address: loc.name })}>
+          <div className="results-label">{loading ? 'Searching...' : (search ? 'Search Results' : 'Suggestions')}</div>
+          {results.map((loc, i) => (
+            <button key={`${loc.lat}-${loc.lng}-${i}`} className="result-item" onClick={() => onSelect(loc)}>
               <div className="icon-circle"><MapPin size={16} /></div>
               <div className="text">
-                <div className="name">{loc.name}</div>
-                <div className="sub">Dhaka, Bangladesh</div>
+                <div className="name">{loc.address.split(',')[0]}</div>
+                <div className="sub">{loc.address.includes(',') ? loc.address.substring(loc.address.indexOf(',') + 2) : 'Dhaka, Bangladesh'}</div>
               </div>
             </button>
           ))}
