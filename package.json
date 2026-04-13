@@ -9,6 +9,11 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "overrides": {
+    "vite-plugin-pwa": {
+      "vite": "$vite"
+    }
+  },
   "dependencies": {
     "@sarap422/font-overused-grotesk": "^1.1.5",
     "@supabase/supabase-js": "^2.103.0",
