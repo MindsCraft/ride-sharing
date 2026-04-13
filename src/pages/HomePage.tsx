@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Navigation, X, Star, Users, Clock, CheckCircle, ArrowRight, Car } from 'lucide-react';
+import { LocateFixed, X, Star, Users, Clock, CheckCircle, ArrowRight, Car } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 
@@ -82,14 +82,25 @@ type MapMode = 'idle' | 'searching' | 'pickup_refinement' | 'results';
 
 import LocationSearchModal from '../components/LocationSearchModal';
 
+export const USER_LOCATION_ICON = L.divIcon({
+  html: `<div class="user-position-pulse">
+          <div class="user-position-dot"></div>
+         </div>`,
+  className: '',
+  iconAnchor: [12, 12],
+});
+
 // Fly to user location
-const LocateMeController = ({ trigger }: { trigger: number }) => {
+const LocateMeController = ({ trigger, onLocate }: { trigger: number, onLocate: (pos: [number, number]) => void }) => {
   const map = useMap();
   useEffect(() => {
     if (trigger > 0) {
       map.locate({ setView: true, maxZoom: 17 });
+      map.on('locationfound', (e) => {
+        onLocate([e.latlng.lat, e.latlng.lng]);
+      });
     }
-  }, [trigger, map]);
+  }, [trigger, map, onLocate]);
   return null;
 };
 interface NegotiationModalProps {
@@ -254,6 +265,7 @@ const HomePage = () => {
   const [selectedRide, setSelectedRide] = useState<RideWithDriver | null>(null);
   const [mapMode, setMapMode] = useState<MapMode>('idle');
   const [toast, setToast] = useState('');
+  const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [locateTrigger, setLocateTrigger] = useState(0);
 
   const fetchRides = async () => {
@@ -410,8 +422,10 @@ const HomePage = () => {
           }} />
         )}
         
-        <LocateMeController trigger={locateTrigger} />
+        <LocateMeController trigger={locateTrigger} onLocate={setUserPos} />
         <MapBoundsController pickup={pickup} dropoff={dropoff} />
+
+        {userPos && <Marker position={userPos} icon={USER_LOCATION_ICON} />}
 
         {/* Real Driver Markers - Only in idle/initial state */}
         {mapMode === 'idle' && rides.slice(0, 5).map(ride => (
@@ -526,7 +540,7 @@ const HomePage = () => {
         aria-label="Locate Me"
         style={{ bottom: mapMode === 'results' ? '280px' : '100px' }}
       >
-        <Navigation size={20} color="var(--primary)" />
+        <LocateFixed size={20} color="var(--primary)" />
       </button>
 
       {/* Negotiation Modal */}
